@@ -13,8 +13,8 @@ func main() {
 		fmt.Printf("Error throw calling libral.GetAllOutcome(%s): %v", queryType, err)
 		return
 	}
-	fmt.Printf("Successfully called libral.GetAllOutcome(%s)", queryType)
-	fmt.Printf("### Hosts %s", hosts)
+	fmt.Printf("Successfully called libral.GetAllOutcome(%s)\n", queryType)
+	fmt.Printf("### Hosts %s\n", hosts)
 
 	// fmt.Println("\n### Let's get more!!!")
 	// r, e := libral.GetAllWithErr("")
