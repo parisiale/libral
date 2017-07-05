@@ -1,76 +1,134 @@
 package libral
 
 /*
-#cgo LDFLAGS: -L/Users/alessandro/code/libral/build/lib -lral -lstdc++ /usr/local/lib/leatherman_json_container.a /usr/local/lib/leatherman_execution.a /usr/local/lib/leatherman_logging.a /usr/local/lib/leatherman_locale.a /usr/local/lib/libboost_locale-mt.dylib /usr/local/lib/libboost_system-mt.dylib /usr/local/lib/libboost_log-mt.dylib /usr/local/lib/libboost_log_setup-mt.dylib /usr/local/lib/libboost_thread-mt.dylib /usr/local/lib/libboost_date_time-mt.dylib /usr/local/lib/libboost_filesystem-mt.dylib /usr/local/lib/libboost_chrono-mt.dylib /usr/local/lib/libboost_regex-mt.dylib /usr/local/lib/libboost_atomic-mt.dylib /usr/local/lib/leatherman_util.a /usr/local/lib/leatherman_file_util.a /usr/local/lib/libyaml-cpp.dylib /usr/local/lib/libboost_program_options-mt.dylib /usr/local/lib/libaugeas.dylib
-#cgo CFLAGS: -I/Users/alessandro/code/libral/lib/inc
+#cgo LDFLAGS: -L${SRCDIR}/../build/lib -lral -lstdc++ /usr/local/lib/leatherman_json_container.a /usr/local/lib/leatherman_execution.a /usr/local/lib/leatherman_logging.a /usr/local/lib/leatherman_locale.a /usr/local/lib/libboost_locale-mt.dylib /usr/local/lib/libboost_system-mt.dylib /usr/local/lib/libboost_log-mt.dylib /usr/local/lib/libboost_log_setup-mt.dylib /usr/local/lib/libboost_thread-mt.dylib /usr/local/lib/libboost_date_time-mt.dylib /usr/local/lib/libboost_filesystem-mt.dylib /usr/local/lib/libboost_chrono-mt.dylib /usr/local/lib/libboost_regex-mt.dylib /usr/local/lib/libboost_atomic-mt.dylib /usr/local/lib/leatherman_util.a /usr/local/lib/leatherman_file_util.a /usr/local/lib/libyaml-cpp.dylib /usr/local/lib/libboost_program_options-mt.dylib /usr/local/lib/libaugeas.dylib
+#cgo CFLAGS: -I${SRCDIR}/../lib/inc
 
 #include "libral/cwrapper.hpp"
-
-// extern char* get_all(char* type_name_c);
-// extern uint8_t get_all_with_err(char** resource, char* type_name);
-// extern outcome get_all_outcome(char* type_name_c);
+#include <stdlib.h>
 */
 import "C"
 
-import "fmt"
+import (
+	"fmt"
+	"unsafe"
+)
 
-//"unsafe"
+// GetProviders returns a JSON string containing a list of providers known to libral.
+//
+// For example:
+//
+//   {
+//       "providers": [
+//           {
+//               "name": "file::posix",
+//               "type": "file",
+//               "source": "builtin",
+//               "desc": "A provider to manage POSIX files.\n",
+//               "suitable": true,
+//               "attributes": [
+//                   {
+//                       "name": "checksum",
+//                       "desc": "(missing description)",
+//                       "type": "enum[md5, md5lite, sha256, sha256lite, mtime, ctime, none]",
+//                       "kind": "r"
+//                   },
+//                   ...
+//               ]
+//           },
+//           {
+//               "name": "host::aug",
+//               "type": "host",
+//               ...
+//           }
+//       ]
+//   }
+func GetProviders() (string, error) {
+	var resultC *C.char
+	defer C.free(unsafe.Pointer(resultC))
 
-// Outcome TODO
-type Outcome struct {
-	Result    string
-	ErrorCode int
-}
-
-// OutcomeC TODO
-// type OutcomeC C.struct_outcome
-
-func convertOutcome(in C.struct_outcome) Outcome {
-	out := new(Outcome)
-	out.Result = C.GoString(in.result)
-	out.ErrorCode = int(in.error_code)
-	//newout := Outcome{
-	//	Result: C.GoString(in.result),
-	//	ErrorCode: int(in.error_code),
-	//}
-	return *out
-}
-
-// GetAllOutcome TODO
-func GetAllOutcome(typeName string) (string, error) {
-	typeNameC := C.CString(typeName)
-	// defer C.free(unsafe.Pointer(typeNameC))
-	outC := C.get_all_outcome(typeNameC)
-	out := convertOutcome(outC)
-	if out.ErrorCode != 0 {
-		return "", fmt.Errorf("Error thrown calling native get_all_outcome: %d", out.ErrorCode)
+	ok := C.get_providers(&resultC)
+	if ok != 0 {
+		return "", fmt.Errorf("Error thrown calling get_providers: %d", ok)
 	}
-	return out.Result, nil
+	result := C.GoString(resultC)
+	return result, nil
 }
 
-// GetAll invokes the get_all(type_name) function in the wrapped libral
-// library converting the output from a char* to native golang string
-func GetAll(typeName string) string {
-	var hosts string
+// GetResources returns a JSON string containing a list all resources of the specified type
+// found by libral.
+//
+// For example, querying the `host` type:
+//
+//   {
+//       "resources": [
+//           {
+//               "name": "localhost",
+//               "ensure": "present",
+//               "ip": "127.0.0.1",
+//               "target": "/etc/hosts",
+//               "ral": {
+//                   "type": "host",
+//                   "provider": "host::aug"
+//               }
+//           },
+//           {
+//               "name": "broadcasthost",
+//               "ensure": "present",
+//               "ip": "255.255.255.255",
+//               "target": "/etc/hosts",
+//               "ral": {
+//                   "type": "host",
+//                   "provider": "host::aug"
+//               }
+//           }
+//       ]
+//   }
+func GetResources(typeName string) (string, error) {
+	var resultC *C.char
+	defer C.free(unsafe.Pointer(resultC))
 	typeNameC := C.CString(typeName)
-	// defer C.free(unsafe.Pointer(typeNameC))
-	hosts = C.GoString(C.get_all(typeNameC))
-	return hosts
+	defer C.free(unsafe.Pointer(typeNameC))
+
+	ok := C.get_resources(&resultC, typeNameC)
+	if ok != 0 {
+		return "", fmt.Errorf("Error thrown calling get_all_resources: %d", ok)
+	}
+	result := C.GoString(resultC)
+	return result, nil
 }
 
-// GetAll invokes the get_all_with_err(&resource, type_name) function in
-// the wrapped libral
-// func GetAllWithErr(typeName string) (string, error) {
-// 	//var resources string
-// 	var r *C.char
-// 	var resources unsafe.Pointer(r)
-// 	defer C.Free(resources)
-// 	var err error
-// 	errorCode := C.get_all_with_err(r, C.CString(typeName))
-// 	if errorCode != 0 {
-// 		err = fmt.Errorf("### It didn't work! Error code: %d", errorCode)
-// 		return "", err
-// 	}
+// GetResource returns a JSON string containing the matching resources of the specified type
+// found by libral. It will throw an error if multiple resources are found with the same name.
+//
+// For example, querying the `host` type `broadcasthost`:
+//
+//   {
+//       "resources": [
+//           {
+//               "name": "broadcasthost",
+//               "ensure": "present",
+//               "ip": "255.255.255.255",
+//               "target": "/etc/hosts",
+//               "ral": {
+//                   "type": "host",
+//                   "provider": "host::aug"
+//               }
+//           }
+//       ]
+//   }
+func GetResource(typeName, resourceName string) (string, error) {
+	var resultC *C.char
+	defer C.free(unsafe.Pointer(resultC))
+	typeNameC := C.CString(typeName)
+	defer C.free(unsafe.Pointer(typeNameC))
+	resourceNameC := C.CString(resourceName)
+	defer C.free(unsafe.Pointer(resourceNameC))
 
-// 	return C.GoString(*r), nil
-// }
+	ok := C.get_resource(&resultC, typeNameC, resourceNameC)
+	if ok != 0 {
+		return "", fmt.Errorf("Error thrown calling get_all_resources: %d", ok)
+	}
+	result := C.GoString(resultC)
+	return result, nil
+}
