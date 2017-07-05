@@ -31,7 +31,7 @@ static char* str_to_cstr(const std::string& s) {
 // Public interface
 //
 
-uint8_t get_types(char **result) {
+uint8_t get_providers(char **result) {
     std::vector<std::string> data_dirs;
     auto ral = lib::ral::create(data_dirs);
     auto raw_types = ral->types();

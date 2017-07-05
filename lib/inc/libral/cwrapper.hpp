@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-uint8_t get_types(char **result);
+uint8_t get_providers(char **result);
 uint8_t get_resource(char **result, char* type_name,  char* resource_name);
 uint8_t get_resources(char **result, char* type_name);
 
