@@ -12,8 +12,9 @@ import "C"
 import (
 	"encoding/json"
 	"fmt"
-	"libral/types"
 	"unsafe"
+
+	"github.com/puppetlabs/libral/go_wrapper/types"
 )
 
 // GetProviders returns the resource providers available to libral.
